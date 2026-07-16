@@ -164,6 +164,17 @@
   .copy-btn:hover { border-color: var(--copper); color: var(--copper-hi); }
   .copy-btn.done { color: var(--good); border-color: var(--good); }
 
+  /* install method tabs */
+  .out-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+  .out-tabs .tab {
+    font: 600 13px var(--sans); cursor: pointer;
+    color: var(--muted); background: transparent;
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px;
+  }
+  .out-tabs .tab:hover { color: var(--copper-hi); border-color: var(--copper-dim); }
+  .out-tabs .tab.sel { color: var(--copper-hi); border-color: var(--copper); background: rgba(196,127,74,.08); }
+  .codebox[hidden] { display: none; }
+
   p code, li code, td code, .note code {
     font: 12.5px var(--mono);
     background: var(--bg-deep);
@@ -389,11 +400,31 @@
         <p class="hint" id="ipHint">Type it in and the commands and URLs below update automatically — copy them ready to run.</p>
       </div>
 
-      <div class="codebox">
+      <div class="out-tabs" role="tablist" aria-label="Install method">
+        <button class="tab sel" type="button" data-tab="compose">docker compose</button>
+        <button class="tab" type="button" data-tab="run">docker run</button>
+      </div>
+
+      <div class="codebox" data-panel="compose">
         <button class="copy-btn" type="button">Copy</button>
 <pre><code>git clone https://github.com/meltface-80/Shortcuts-for-Roon.git
 cd Shortcuts-for-Roon
 <span class="ip-prefix"></span>docker compose up <span class="k">-d</span></code></pre>
+      </div>
+
+      <div class="codebox" data-panel="run" hidden>
+        <button class="copy-btn" type="button">Copy</button>
+<pre><code><span class="c"># Build the image straight from GitHub — no clone needed</span>
+docker build <span class="k">-t</span> shortcuts-for-roon https://github.com/meltface-80/Shortcuts-for-Roon.git
+
+<span class="c"># Run it</span>
+docker run <span class="k">-d</span> \
+  <span class="k">--name</span> shortcuts-for-roon \
+  <span class="k">--network</span> host \
+  <span class="k">--restart</span> unless-stopped \
+  <span class="k">-e</span> PUBLIC_BASE_URL=http://<span class="ip-out" data-ph="YOUR_SERVER_LAN_IP">YOUR_SERVER_LAN_IP</span>:3000 \
+  <span class="k">-v</span> roon-data:/data \
+  shortcuts-for-roon</code></pre>
       </div>
 
       <p class="note">
@@ -578,6 +609,19 @@ cd Shortcuts-for-Roon
     btn.addEventListener('click', function () {
       var a = btn.parentElement.querySelector('.hookrow-url');
       copyText(a ? a.textContent : '', btn);
+    });
+  });
+
+  // Install-method tabs: show the matching code box, hide the others.
+  document.querySelectorAll('.out-tabs').forEach(function (tabs) {
+    var scope = tabs.parentElement;
+    tabs.querySelectorAll('.tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        tabs.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('sel', t === tab); });
+        scope.querySelectorAll('[data-panel]').forEach(function (panel) {
+          panel.hidden = panel.dataset.panel !== tab.dataset.tab;
+        });
+      });
     });
   });
 </script>
