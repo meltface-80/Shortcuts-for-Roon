@@ -519,6 +519,9 @@ docker run <span class="k">-d</span> \
         <b>Multi-album</b> webhooks play the first album immediately and queue the rest. With
         several genres, each album is drawn from a randomly chosen one. Genres must exist in your
         Roon library — a missing one fails gracefully with a clear message.
+        <b>Subgenres:</b> some genres are nested (in Roon's AllMusic taxonomy, Metal / Heavy Metal
+        sit under <i>Pop/Rock</i>). The Metal preset already handles this; for any other nested
+        genre, type the path as <code>Parent &gt; Child</code>, e.g. <code>Pop/Rock &gt; Heavy Metal</code>.
       </p>
     </div>
   </section>

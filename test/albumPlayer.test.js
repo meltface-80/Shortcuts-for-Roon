@@ -158,3 +158,39 @@ test('playRandomAlbums count defaults to 1 and is best-effort on later slots', a
   assert.strictEqual(one.requested, 1);
   assert.strictEqual(one.albums.length, 1);
 });
+
+/* --- nested genres (Metal under Pop/Rock) ------------------------------- */
+
+test('explicit nested path plays a subgenre album (Pop/Rock > Heavy Metal)', async () => {
+  const roonManager = createFakeRoonManager();
+  const result = await playRandomAlbum({
+    roonManager,
+    genrePath: ['Pop/Rock', 'Heavy Metal'],
+    zoneId: 'zone-1',
+  });
+  assert.match(result.album, /^Heavy Metal Album \d+$/);
+});
+
+test('metal preset candidates resolve via the Pop/Rock drill path', async () => {
+  const roonManager = createFakeRoonManager();
+  // Top-level "Metal"/"Heavy Metal" do not exist here (they are under Pop/Rock),
+  // so the first candidates miss and the drill paths succeed.
+  const result = await playByGenrePathCandidates({
+    roonManager,
+    candidates: [['Metal'], ['Heavy Metal'], ['Pop/Rock', 'Heavy Metal'], ['Pop/Rock', 'Metal']],
+    zoneId: 'zone-1',
+  });
+  assert.match(result.album, /^(Heavy Metal|Metal) Album \d+$/);
+});
+
+test('playRandomAlbums (multi) plays several metal albums via the drill path', async () => {
+  const roonManager = createFakeRoonManager();
+  const result = await playRandomAlbums({
+    roonManager,
+    genreSets: [[['Metal'], ['Heavy Metal'], ['Pop/Rock', 'Heavy Metal'], ['Pop/Rock', 'Metal']]],
+    zoneId: 'zone-1',
+    count: 3,
+  });
+  assert.strictEqual(result.albums.length, 3);
+  result.albums.forEach((a) => assert.match(a, /^(Heavy Metal|Metal) Album \d+$/));
+});

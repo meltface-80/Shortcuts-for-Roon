@@ -151,17 +151,23 @@ list of **candidate genre paths** to try (case-insensitive, exact title match on
 each level of the `Genres` browser):
 
 - Pop/Rock → `["Pop/Rock"]` (literal slash)
-- Metal → `["Metal"]`, then `["Heavy Metal"]` (AllMusic top-level is "Heavy Metal")
+- Metal → `["Metal"]`, `["Heavy Metal"]`, `["Pop/Rock","Heavy Metal"]`,
+  `["Pop/Rock","Metal"]` (Metal/Heavy Metal are AllMusic **subgenres nested under
+  Pop/Rock** — the drill paths are what actually work in most libraries)
 - Jazz → `["Jazz"]`
 - Electronic → `["Electronic"]`
 - Trip-Hop → `["Trip-Hop"]`, then `["Electronic", "Trip-Hop"]` (it's a **subgenre
   under Electronic**, hyphenated)
 
 Genre lookup scans the `Genres` list for the first path level; if not found it
-tries the next candidate path (which may drill through a parent). The `Genres`
-list only shows genres that actually have library content, so a missing genre
-fails gracefully with a clear message. Genre strings are **data, not hardcoded
-logic** — users add any genre/path their library has via the dropdown or PWA.
+tries the next candidate path (which may drill through a parent). Users can
+target a **nested subgenre** by typing `Parent > Child` (e.g. `Pop/Rock > Heavy
+Metal`) anywhere a genre is entered — `genreNameToCandidates` turns `>` into a
+multi-level drill path. The `Genres` list only shows genres that actually have
+library content, so a missing genre fails gracefully with a clear message.
+Webhook triggers **re-resolve genre sets from the stored label at play time**
+(`genreSetsFor`), so preset/taxonomy fixes reach existing webhooks without
+recreating them. Genre strings are **data, not hardcoded logic**.
 
 ## Updates & versioning
 

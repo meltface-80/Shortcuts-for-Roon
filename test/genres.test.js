@@ -25,7 +25,7 @@ test('any is the only null-genrePath preset', () => {
   assert.strictEqual(getPreset('any').genrePath, null);
   assert.deepStrictEqual(getPreset('jazz').genrePath, [['Jazz']]);
   assert.deepStrictEqual(getPreset('trip-hop').genrePath, [['Trip-Hop'], ['Electronic', 'Trip-Hop']]);
-  assert.deepStrictEqual(getPreset('metal').genrePath, [['Metal'], ['Heavy Metal']]);
+  assert.deepStrictEqual(getPreset('metal').genrePath, [['Metal'], ['Heavy Metal'], ['Pop/Rock', 'Heavy Metal'], ['Pop/Rock', 'Metal']]);
 });
 
 test('getPreset returns undefined for unknown key', () => {
@@ -38,12 +38,26 @@ const { genreNameToCandidates, parseGenres, clampCount, MAX_ALBUM_COUNT } = requ
 
 test('genreNameToCandidates maps preset labels to their candidate paths', () => {
   assert.deepStrictEqual(genreNameToCandidates('Jazz'), [['Jazz']]);
-  // case-insensitive preset match keeps the fallback candidates (Metal -> Heavy Metal)
-  assert.deepStrictEqual(genreNameToCandidates('metal'), [['Metal'], ['Heavy Metal']]);
+  // Metal drills through Pop/Rock (AllMusic nesting), case-insensitive.
+  assert.deepStrictEqual(genreNameToCandidates('metal'), [
+    ['Metal'], ['Heavy Metal'], ['Pop/Rock', 'Heavy Metal'], ['Pop/Rock', 'Metal'],
+  ]);
   assert.deepStrictEqual(genreNameToCandidates('Trip-Hop'), [['Trip-Hop'], ['Electronic', 'Trip-Hop']]);
   // unknown genre -> single literal path
   assert.deepStrictEqual(genreNameToCandidates('Ambient'), [['Ambient']]);
   assert.strictEqual(genreNameToCandidates(''), null);
+});
+
+test('genreNameToCandidates supports explicit nested "Parent > Child" paths', () => {
+  assert.deepStrictEqual(genreNameToCandidates('Pop/Rock > Heavy Metal'), [['Pop/Rock', 'Heavy Metal']]);
+  assert.deepStrictEqual(genreNameToCandidates('Electronic > Trip-Hop > Downtempo'), [
+    ['Electronic', 'Trip-Hop', 'Downtempo'],
+  ]);
+  // works inside a multi-genre string too
+  assert.deepStrictEqual(parseGenres('Pop/Rock > Heavy Metal, Jazz'), [
+    [['Pop/Rock', 'Heavy Metal']],
+    [['Jazz']],
+  ]);
 });
 
 test('parseGenres splits on comma / & / semicolon and resolves each', () => {
@@ -51,7 +65,7 @@ test('parseGenres splits on comma / & / semicolon and resolves each', () => {
   assert.strictEqual(parseGenres(null), null);
   assert.deepStrictEqual(parseGenres('Jazz'), [[['Jazz']]]);
   assert.deepStrictEqual(parseGenres('Metal & Electronic'), [
-    [['Metal'], ['Heavy Metal']],
+    [['Metal'], ['Heavy Metal'], ['Pop/Rock', 'Heavy Metal'], ['Pop/Rock', 'Metal']],
     [['Electronic']],
   ]);
   assert.deepStrictEqual(parseGenres(['Jazz', 'Electronic']), [[['Jazz']], [['Electronic']]]);
