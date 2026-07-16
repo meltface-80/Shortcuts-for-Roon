@@ -9,8 +9,17 @@ function text(res, status, message) {
   res.status(status).type('text/plain').send(message);
 }
 
-/** Resolve a webhook's stored config into the genre sets the player expects. */
+/**
+ * Resolve a webhook's stored config into the genre sets the player expects.
+ * Prefer re-resolving from the genre label so webhooks pick up preset/taxonomy
+ * fixes (e.g. Metal now drills through Pop/Rock) without being recreated; fall
+ * back to the stored genre sets / path.
+ */
 function genreSetsFor(webhook) {
+  if (webhook.genre) {
+    const fromLabel = parseGenres(webhook.genre);
+    if (fromLabel) return fromLabel;
+  }
   if (webhook.genres && webhook.genres.length) return webhook.genres;
   if (webhook.genrePath) return [webhook.genrePath];
   return null;

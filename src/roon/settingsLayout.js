@@ -113,8 +113,9 @@ function buildLayout(settings, { webhooksRepo, config, lastUpdate }) {
         type: 'label',
         title:
           `Type one or more genres, e.g. "Metal, Electronic" (each album is drawn ` +
-          `from a random one). Presets: ${presetNames}. Leave blank for any genre. ` +
-          `Set the count for a multi-album queue, then Save to create the webhook.`,
+          `from a random one). Presets: ${presetNames}. For a subgenre, use ` +
+          `"Parent > Child", e.g. "Pop/Rock > Heavy Metal". Leave blank for any ` +
+          `genre. Set the count for a multi-album queue, then Save to create the webhook.`,
       },
       {
         type: 'group',

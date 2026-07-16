@@ -9,7 +9,9 @@
 const PRESETS = [
   { key: 'any', label: 'Any Album', genrePath: null },
   { key: 'pop-rock', label: 'Pop/Rock', genrePath: [['Pop/Rock']] },
-  { key: 'metal', label: 'Metal', genrePath: [['Metal'], ['Heavy Metal']] },
+  // Metal / Heavy Metal are AllMusic subgenres nested under "Pop/Rock" in most
+  // Roon libraries, so include the drill-down paths as candidates.
+  { key: 'metal', label: 'Metal', genrePath: [['Metal'], ['Heavy Metal'], ['Pop/Rock', 'Heavy Metal'], ['Pop/Rock', 'Metal']] },
   { key: 'jazz', label: 'Jazz', genrePath: [['Jazz']] },
   { key: 'electronic', label: 'Electronic', genrePath: [['Electronic']] },
   { key: 'trip-hop', label: 'Trip-Hop', genrePath: [['Trip-Hop'], ['Electronic', 'Trip-Hop']] },
@@ -38,6 +40,13 @@ function getPreset(key) {
 function genreNameToCandidates(name) {
   const n = String(name == null ? '' : name).trim();
   if (!n) return null;
+  // Explicit nested path for subgenres, e.g. "Pop/Rock > Heavy Metal" — drill
+  // Genres -> Pop/Rock -> Heavy Metal. (">" avoids clashing with the "/" in
+  // genre names like "Pop/Rock".)
+  if (n.includes('>')) {
+    const path = n.split('>').map((s) => s.trim()).filter(Boolean);
+    return path.length ? [path] : null;
+  }
   const preset = PRESETS.find((p) => p.label.toLowerCase() === n.toLowerCase() && p.genrePath);
   if (preset) return preset.genrePath;
   return [[n]];

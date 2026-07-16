@@ -73,6 +73,16 @@ function buildDefaultTree(opts = {}) {
               { title: 'Trip-Hop', items: [{ title: 'Albums', items: mkAlbums('Trip-Hop', 2) }] },
             ],
           },
+          {
+            // Metal / Heavy Metal are nested under Pop/Rock (AllMusic taxonomy),
+            // NOT at the top level — mirrors real Roon libraries.
+            title: 'Pop/Rock',
+            items: [
+              { title: 'Albums', items: mkAlbums('Pop/Rock', 4) },
+              { title: 'Heavy Metal', items: [{ title: 'Albums', items: mkAlbums('Heavy Metal', 3) }] },
+              { title: 'Metal', items: [{ title: 'Albums', items: mkAlbums('Metal', 3) }] },
+            ],
+          },
         ],
       },
     ],
