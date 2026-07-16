@@ -63,12 +63,11 @@
       var(--bg-deep);
     border-bottom: 1px solid var(--line);
   }
-  header.hero img.logo {
-    width: 92px; height: 92px;
-    border-radius: 20px;
-    box-shadow: 0 10px 40px rgba(0,0,0,.45);
+  header.hero .wordmark {
+    font-size: 46px; font-weight: 800; letter-spacing: .03em; line-height: 1;
   }
-  header.hero h1 { font-size: 30px; margin-top: 22px; font-weight: 700; letter-spacing: .01em; }
+  header.hero .wordmark span { color: var(--copper); }
+  header.hero h1 { font-size: 30px; margin-top: 18px; font-weight: 700; letter-spacing: .01em; }
   header.hero p.tag { color: var(--muted); max-width: 640px; margin: 12px auto 0; font-size: 16px; }
   .badges { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   .badge {
@@ -188,7 +187,8 @@
   /* ---------- small screens ---------- */
   @media (max-width: 600px) {
     header.hero { padding: 32px 16px 30px; }
-    header.hero h1 { font-size: 24px; margin-top: 18px; }
+    header.hero .wordmark { font-size: 34px; }
+    header.hero h1 { font-size: 24px; margin-top: 14px; }
     section { padding: 40px 0 6px; }
     section > .wrap > h2 { font-size: 21px; }
     .codebox pre { font-size: 12px; padding: 14px; padding-top: 40px; }
@@ -208,7 +208,7 @@
 
 <nav class="topnav">
   <div class="wrap">
-    <a class="brand" href="#top">Shortcuts for <span>Roon</span></a>
+    <a class="brand" href="#top">Music<span>D</span></a>
     <a href="#what">What</a>
     <a href="#webhooks">Webhooks</a>
     <a href="#install">Install</a>
@@ -219,8 +219,8 @@
 </nav>
 
 <header class="hero" id="top">
-  <img class="logo" src="icon.svg" alt="Shortcuts for Roon" />
-  <h1>Play a random album with a tap — or by asking Siri.</h1>
+  <div class="wordmark">Music<span>D</span></div>
+  <h1>Shortcuts for Roon</h1>
   <p class="tag">
     A self-hosted Roon extension that turns "play a random album" into a plain
     web link. Hit the URL and a random album — optionally filtered by genre —
