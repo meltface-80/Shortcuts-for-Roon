@@ -16,7 +16,7 @@ for creating and copying webhook URLs. No cloud, no account, no subscription.
 
 **Website & full guide:** https://meltface-80.github.io/MusicD-Shortcuts/
 
-## Six ready-made webhooks
+## Ready-made webhooks
 
 Seeded automatically on first run:
 
@@ -28,9 +28,15 @@ Seeded automatically on first run:
 | Random Jazz | `/w/random-jazz` |
 | Random Electronic | `/w/random-electronic` |
 | Random Trip-Hop | `/w/random-trip-hop` |
+| 5 Random Albums (any genre) | `/w/5-random-albums` |
+| 10 Random Albums (any genre) | `/w/10-random-albums` |
 
-Create your own for any genre in your library — either in **Roon → Settings →
-Extensions → MusicD Shortcuts**, or in the built-in dashboard.
+Create your own — one genre or several, and any number of albums — in **Roon →
+Settings → Extensions → MusicD Shortcuts** or the built-in dashboard.
+Multi-album webhooks play the first album now and queue the rest; with several
+genres, each album is drawn from a randomly chosen one.
+
+Ad-hoc endpoint: `GET /random-album?count=7&genres=Metal,Electronic`.
 
 Webhook URL shape: `http://<YOUR_SERVER_LAN_IP>:3000/w/<slug>` ·
 dashboard: `http://<YOUR_SERVER_LAN_IP>:3000/`

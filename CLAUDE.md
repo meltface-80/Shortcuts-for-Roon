@@ -18,6 +18,14 @@ It ships with pre-made webhooks:
 4. Random Jazz album
 5. Random Electronic album
 6. Random Trip-Hop album
+7. 5 random albums (any genre)
+8. 10 random albums (any genre)
+
+Webhooks can also play **multiple albums** (`count`) drawn from **one or more
+genres** (`genres`) — the first plays now, the rest queue; with several genres
+each album comes from a randomly chosen one. `albumPlayer.playRandomAlbums`
+implements this (generalised "Play Now"/"Queue" action); the ad-hoc endpoint is
+`GET /random-album?count=N&genres=Metal,Electronic`.
 
 Users can also create their own genre webhooks two ways:
 
