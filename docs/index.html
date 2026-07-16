@@ -63,12 +63,11 @@
       var(--bg-deep);
     border-bottom: 1px solid var(--line);
   }
-  header.hero img.logo {
-    width: 92px; height: 92px;
-    border-radius: 20px;
-    box-shadow: 0 10px 40px rgba(0,0,0,.45);
+  header.hero .wordmark {
+    font-size: 46px; font-weight: 800; letter-spacing: .03em; line-height: 1;
   }
-  header.hero h1 { font-size: 30px; margin-top: 22px; font-weight: 700; letter-spacing: .01em; }
+  header.hero .wordmark span { color: var(--copper); }
+  header.hero h1 { font-size: 30px; margin-top: 18px; font-weight: 700; letter-spacing: .01em; }
   header.hero p.tag { color: var(--muted); max-width: 640px; margin: 12px auto 0; font-size: 16px; }
   .badges { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   .badge {
@@ -152,6 +151,21 @@
     color: var(--copper-hi);
   }
 
+  /* ---------- ip configurator ---------- */
+  .ipcfg {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 22px;
+  }
+  .ipcfg label { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; letter-spacing: .02em; }
+  .ipcfg input {
+    width: 100%; max-width: 320px; padding: 9px 12px; font-size: 14px;
+    font-family: var(--mono); color: var(--text); background: var(--bg-deep);
+    border: 1px solid var(--line); border-radius: 8px; outline: none;
+  }
+  .ipcfg input:focus { border-color: var(--copper); }
+  .ipcfg .hint { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .ip-out.set { color: var(--copper-hi); }
+
   /* ---------- numbered steps ---------- */
   .steps { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
   .steps ol { padding-left: 20px; font-size: 14px; display: grid; gap: 10px; color: var(--muted); }
@@ -188,7 +202,8 @@
   /* ---------- small screens ---------- */
   @media (max-width: 600px) {
     header.hero { padding: 32px 16px 30px; }
-    header.hero h1 { font-size: 24px; margin-top: 18px; }
+    header.hero .wordmark { font-size: 34px; }
+    header.hero h1 { font-size: 24px; margin-top: 14px; }
     section { padding: 40px 0 6px; }
     section > .wrap > h2 { font-size: 21px; }
     .codebox pre { font-size: 12px; padding: 14px; padding-top: 40px; }
@@ -208,7 +223,7 @@
 
 <nav class="topnav">
   <div class="wrap">
-    <a class="brand" href="#top">Shortcuts for <span>Roon</span></a>
+    <a class="brand" href="#top">Music<span>D</span></a>
     <a href="#what">What</a>
     <a href="#webhooks">Webhooks</a>
     <a href="#install">Install</a>
@@ -219,8 +234,8 @@
 </nav>
 
 <header class="hero" id="top">
-  <img class="logo" src="icon.svg" alt="Shortcuts for Roon" />
-  <h1>Play a random album with a tap — or by asking Siri.</h1>
+  <div class="wordmark">Music<span>D</span></div>
+  <h1>Shortcuts for Roon</h1>
   <p class="tag">
     A self-hosted Roon extension that turns "play a random album" into a plain
     web link. Hit the URL and a random album — optionally filtered by genre —
@@ -290,8 +305,8 @@
         </table>
       </div>
       <p class="note">
-        Full URL shape: <code>http://&lt;YOUR_SERVER_LAN_IP&gt;:3000/w/&lt;slug&gt;</code>.
-        The dashboard lives at <code>http://&lt;YOUR_SERVER_LAN_IP&gt;:3000/</code>.
+        Full URL shape: <code>http://<span class="ip-out" data-ph="&lt;YOUR_SERVER_LAN_IP&gt;">&lt;YOUR_SERVER_LAN_IP&gt;</span>:3000/w/&lt;slug&gt;</code>.
+        The dashboard lives at <code>http://<span class="ip-out" data-ph="&lt;YOUR_SERVER_LAN_IP&gt;">&lt;YOUR_SERVER_LAN_IP&gt;</span>:3000/</code>.
       </p>
     </div>
   </section>
@@ -304,13 +319,20 @@
         extension can discover your Roon Core over UDP broadcast.
       </p>
 
+      <div class="ipcfg">
+        <label for="ipInput">Your Roon server's LAN IP address</label>
+        <input id="ipInput" type="text" inputmode="decimal" autocomplete="off"
+               spellcheck="false" placeholder="192.168.1.50" aria-describedby="ipHint" />
+        <p class="hint" id="ipHint">Type it in and the commands and URLs below update automatically — copy them ready to run.</p>
+      </div>
+
       <p class="code-label">Recommended — clone and Docker Compose</p>
       <div class="codebox">
         <button class="copy-btn" type="button">Copy</button>
 <pre><code><span class="c">git clone https://github.com/meltface-80/Shortcuts-for-Roon.git</span>
 cd Shortcuts-for-Roon
 <span class="c"># (optional) edit docker-compose.yml to set:</span>
-<span class="c">#   PUBLIC_BASE_URL=http://YOUR_SERVER_LAN_IP:3000</span>
+<span class="c">#   PUBLIC_BASE_URL=http://<span class="ip-out" data-ph="YOUR_SERVER_LAN_IP">YOUR_SERVER_LAN_IP</span>:3000</span>
 docker compose up <span class="k">-d</span></code></pre>
       </div>
 
@@ -320,7 +342,7 @@ docker compose up <span class="k">-d</span></code></pre>
 <pre><code>docker build <span class="k">-t</span> shortcuts-for-roon .
 
 docker run <span class="k">-d</span> <span class="k">--name</span> shortcuts-for-roon <span class="k">--network</span> host \
-  <span class="k">-e</span> PUBLIC_BASE_URL=http://YOUR_SERVER_LAN_IP:3000 \
+  <span class="k">-e</span> PUBLIC_BASE_URL=http://<span class="ip-out" data-ph="YOUR_SERVER_LAN_IP">YOUR_SERVER_LAN_IP</span>:3000 \
   <span class="k">-v</span> roon-data:/data <span class="k">--restart</span> unless-stopped shortcuts-for-roon</code></pre>
       </div>
 
@@ -436,6 +458,29 @@ docker run <span class="k">-d</span> <span class="k">--name</span> shortcuts-for
 </footer>
 
 <script>
+  // Live server-IP substitution: fill the field and every command/URL updates.
+  (function () {
+    var input = document.getElementById('ipInput');
+    var slots = document.querySelectorAll('.ip-out');
+    if (!input || !slots.length) return;
+    function apply(v) {
+      v = (v || '').trim();
+      slots.forEach(function (s) {
+        s.textContent = v || s.dataset.ph;
+        s.classList.toggle('set', !!v);
+      });
+    }
+    var KEY = 'sfr-server-ip';
+    try {
+      var saved = localStorage.getItem(KEY) || '';
+      if (saved) { input.value = saved; apply(saved); }
+    } catch (e) {}
+    input.addEventListener('input', function () {
+      apply(input.value);
+      try { localStorage.setItem(KEY, input.value.trim()); } catch (e) {}
+    });
+  })();
+
   document.querySelectorAll('.copy-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var pre = btn.parentElement.querySelector('pre');
