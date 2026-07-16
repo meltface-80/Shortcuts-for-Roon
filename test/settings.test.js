@@ -37,6 +37,10 @@ test('settings expose a Software update section (not checked yet)', () => {
   service.opts.get_settings((l) => { layout = l; });
   const groups = layout.layout.filter((w) => w.type === 'group').map((g) => g.title);
   assert.ok(groups.includes('Software update'));
+  // The update section is the LAST widget in the settings.
+  const last = layout.layout[layout.layout.length - 1];
+  assert.strictEqual(last.type, 'group');
+  assert.strictEqual(last.title, 'Software update');
   const lbl = updateLabel(layout);
   assert.match(lbl, /Installed version: v1\.0\.0 \(pinned to 1\.0\.x\)/);
   assert.match(lbl, /Not checked yet/);

@@ -95,6 +95,7 @@ class RoonManager {
         checkForUpdate({
           owner: this.config.GITHUB_OWNER,
           repo: this.config.GITHUB_REPO,
+          branch: this.config.GITHUB_BRANCH,
           currentVersion: this.config.VERSION,
         }),
     });

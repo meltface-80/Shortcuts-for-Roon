@@ -52,6 +52,7 @@ function loadConfig(env = process.env) {
     VERSION: pkg.version,
     GITHUB_OWNER: env.GITHUB_OWNER || 'meltface-80',
     GITHUB_REPO: env.GITHUB_REPO || 'MusicD-Shortcuts',
+    GITHUB_BRANCH: env.GITHUB_BRANCH || 'main',
   };
 }
 

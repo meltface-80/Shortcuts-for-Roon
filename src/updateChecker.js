@@ -1,10 +1,12 @@
 'use strict';
 
 /**
- * Manual update checker. Reads GitHub tags for the extension's repo and reports
- * whether a newer release exists WITHIN the installed version's major.minor line
- * (e.g. while on 1.0.0 it only offers 1.0.1, 1.0.2, … — never 1.1.0 or 2.0.0).
- * It never applies anything; the operator redeploys the container to update.
+ * Manual update checker. Reads the `version` from `package.json` on the repo's
+ * default branch (GitHub raw) and reports whether it is newer than the installed
+ * version WITHIN the same major.minor line (the pin — e.g. while on 1.0.x it only
+ * offers 1.0.y, never 1.1.0). It never applies anything; the operator redeploys.
+ * Reading the branch's package.json (rather than git tags/releases) means an
+ * update is detected as soon as a new version is merged — no tagging required.
  * The extension_id stays constant, so an update is never a new Roon extension.
  */
 
@@ -35,54 +37,56 @@ function fmt(v) {
 }
 
 /**
- * Fetch tag names for a GitHub repo.
+ * Read the published `version` from package.json on a repo branch (GitHub raw).
  * @param {string} owner
  * @param {string} repo
+ * @param {string} branch
  * @param {Function} [fetchImpl] injected fetch (defaults to global fetch)
- * @returns {Promise<string[]>}
+ * @returns {Promise<string>}
  */
-async function fetchTags(owner, repo, fetchImpl) {
+async function fetchRemoteVersion(owner, repo, branch, fetchImpl) {
   const f = fetchImpl || globalThis.fetch;
   if (typeof f !== 'function') throw new Error('fetch is not available');
-  const res = await f(`https://api.github.com/repos/${owner}/${repo}/tags?per_page=100`, {
-    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'MusicD-Shortcuts' },
-  });
+  const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/package.json`;
+  const res = await f(url, { headers: { Accept: 'application/json', 'User-Agent': 'MusicD-Shortcuts' } });
   if (!res || !res.ok) {
     const status = res && res.status ? res.status : 'network error';
-    throw new Error(`GitHub API request failed (${status})`);
+    throw new Error(`Update check failed (${status})`);
   }
   const body = await res.json();
-  return Array.isArray(body) ? body.map((t) => t && t.name).filter(Boolean) : [];
+  const version = body && body.version;
+  if (!version) throw new Error('Could not read the published version');
+  return String(version);
 }
 
 /**
  * Check for a newer release pinned to the current version's major.minor line.
- * @param {{owner:string, repo:string, currentVersion:string, fetchImpl?:Function}} params
- * @returns {Promise<{current:string, latest:string, pinned:string, updateAvailable:boolean, checkedAt:number}>}
+ * @param {{owner:string, repo:string, branch?:string, currentVersion:string, fetchImpl?:Function}} params
+ * @returns {Promise<{current:string, latest:string, remote:string, pinned:string, updateAvailable:boolean, newerLineAvailable:boolean, checkedAt:number}>}
  */
-async function checkForUpdate({ owner, repo, currentVersion, fetchImpl }) {
+async function checkForUpdate({ owner, repo, branch, currentVersion, fetchImpl }) {
   const cur = parseSemver(currentVersion);
   if (!cur) throw new Error(`Invalid current version: ${currentVersion}`);
   const pinned = `${cur.major}.${cur.minor}.x`;
 
-  const names = await fetchTags(owner, repo, fetchImpl);
-  // Keep only tags on the same major.minor line (the pin).
-  const inLine = names
-    .map(parseSemver)
-    .filter((v) => v && v.major === cur.major && v.minor === cur.minor);
+  const remoteStr = await fetchRemoteVersion(owner, repo, branch || 'main', fetchImpl);
+  const remote = parseSemver(remoteStr);
+  if (!remote) throw new Error(`Could not parse the published version: ${remoteStr}`);
 
-  let latest = cur;
-  for (const v of inLine) {
-    if (cmp(v, latest) > 0) latest = v;
-  }
+  const inPin = remote.major === cur.major && remote.minor === cur.minor;
+  const newer = cmp(remote, cur) > 0;
+  const updateAvailable = inPin && newer;
 
   return {
     current: fmt(cur),
-    latest: fmt(latest),
+    latest: updateAvailable ? fmt(remote) : fmt(cur),
+    remote: fmt(remote),
     pinned,
-    updateAvailable: cmp(latest, cur) > 0,
+    updateAvailable,
+    // A newer major.minor line exists but you're pinned (informational only).
+    newerLineAvailable: !inPin && newer,
     checkedAt: Date.now(),
   };
 }
 
-module.exports = { parseSemver, cmp, fmt, fetchTags, checkForUpdate };
+module.exports = { parseSemver, cmp, fmt, fetchRemoteVersion, checkForUpdate };
