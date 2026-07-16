@@ -529,6 +529,11 @@ docker run <span class="k">-d</span> \
       <p class="lead">The short version of the technical details.</p>
 
       <details class="faq">
+        <summary>How do I update it?</summary>
+        <p>In <b>Roon &rarr; Settings &rarr; Extensions &rarr; MusicD Shortcuts</b>, the <b>Software update</b> section has a <b>Check now</b> option — pick it and Save, and it reports whether a newer <code>1.0.x</code> release exists. It never updates on its own. To apply an update, redeploy the container (<code>docker compose pull &amp;&amp; docker compose up -d</code>, or rebuild). Your pairing and webhooks live on the <code>/data</code> volume, so they're kept — and because the extension keeps the same identity, it stays the <b>same</b> extension in Roon (no duplicate, no re-authorising).</p>
+      </details>
+
+      <details class="faq">
         <summary>Why does it need host networking?</summary>
         <p>Roon Core discovery uses UDP broadcast. A bridged Docker network won't receive those broadcasts, so the extension could never find or pair with your Core. <code>network_mode: host</code> puts the container directly on your LAN. This is a Linux feature and is not fully supported on Docker Desktop for macOS/Windows.</p>
       </details>

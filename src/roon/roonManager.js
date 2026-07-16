@@ -2,6 +2,7 @@
 
 const { makeBrowseClient } = require('./browseClient');
 const { makeSettingsService } = require('./settingsLayout');
+const { checkForUpdate } = require('../updateChecker');
 
 /**
  * Lazily require the node-roon-api packages. Kept out of module scope so tests
@@ -90,6 +91,12 @@ class RoonManager {
       config: this.config,
       getZones: () => this.getZones(),
       onDefaultZone: (zoneId) => this.setDefaultZoneId(zoneId),
+      checkForUpdate: () =>
+        checkForUpdate({
+          owner: this.config.GITHUB_OWNER,
+          repo: this.config.GITHUB_REPO,
+          currentVersion: this.config.VERSION,
+        }),
     });
     this.svcSettings = settings.service;
 
