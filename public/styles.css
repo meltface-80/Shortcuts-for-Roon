@@ -1,54 +1,34 @@
 :root {
-  --accent: #0e7c86;
-  --accent-strong: #0a5d65;
-  --accent-contrast: #ffffff;
+  color-scheme: dark;
 
-  --bg: #f4f6f7;
-  --surface: #ffffff;
-  --surface-2: #f0f3f4;
-  --border: #d9e0e2;
-  --text: #16232a;
-  --text-muted: #5c6c73;
+  /* Charcoal + copper — matches the docs / GitHub Pages site. */
+  --accent: #c47f4a;          /* copper */
+  --accent-strong: #d99a66;   /* copper-hi */
+  --accent-contrast: #17110b; /* text on copper */
+  --accent-dim: #8a5a35;      /* copper-dim */
 
-  --ok: #12855b;
-  --ok-bg: #e2f4ec;
-  --warn: #9a6a00;
-  --warn-bg: #fbeecd;
-  --danger: #b3341f;
-  --danger-bg: #fbe6e2;
+  --bg: #1b1d1f;              /* charcoal */
+  --bg-deep: #141618;
+  --surface: #232628;         /* panel */
+  --surface-2: #2a2d30;       /* panel-2 */
+  --border: #35393d;          /* line */
+  --text: #e8e6e3;
+  --text-muted: #a8a49e;
+
+  --ok: #7fb47f;
+  --ok-bg: #1c2a1c;
+  --warn: #d9a441;
+  --warn-bg: #322710;
+  --danger: #e0725a;
+  --danger-bg: #331b16;
 
   --radius: 14px;
   --radius-sm: 9px;
-  --shadow: 0 1px 2px rgba(16, 32, 40, .06), 0 8px 24px rgba(16, 32, 40, .06);
-  --focus: 0 0 0 3px rgba(14, 124, 134, .35);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 8px 24px rgba(0, 0, 0, .45);
+  --focus: 0 0 0 3px rgba(196, 127, 74, .4);
 
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
           Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --accent: #2bc4d4;
-    --accent-strong: #22a6b4;
-    --accent-contrast: #04252a;
-
-    --bg: #0b1416;
-    --surface: #121e22;
-    --surface-2: #17262b;
-    --border: #24373d;
-    --text: #e7eef0;
-    --text-muted: #9db0b6;
-
-    --ok: #46d69f;
-    --ok-bg: #12312a;
-    --warn: #f0c064;
-    --warn-bg: #362a12;
-    --danger: #ff8a72;
-    --danger-bg: #3a1c17;
-
-    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
-    --focus: 0 0 0 3px rgba(43, 196, 212, .4);
-  }
 }
 
 * { box-sizing: border-box; }
@@ -176,9 +156,8 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--accent-strong);
-  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
 }
-@media (prefers-color-scheme: dark) { .tag { color: var(--accent); } }
 .tag--preset {
   background: color-mix(in srgb, var(--warn) 16%, transparent);
   color: var(--warn);
@@ -191,11 +170,11 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
   min-width: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: .82rem;
-  background: var(--surface);
+  background: var(--bg-deep);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: .5rem .6rem;
-  color: var(--text-muted);
+  color: var(--accent-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -244,7 +223,7 @@ input[type="text"], select {
   appearance: none;
 }
 select {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%237a8a90' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23a8a49e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   background-repeat: no-repeat;
   background-position: right .7rem center;
   padding-right: 2rem;
@@ -313,8 +292,9 @@ input[type="text"]:focus, select:focus { outline: none; border-color: var(--acce
   left: 50%;
   bottom: calc(1.4rem + env(safe-area-inset-bottom));
   transform: translate(-50%, 1rem);
-  background: var(--text);
-  color: var(--bg);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--accent);
   padding: .6rem 1rem;
   border-radius: 999px;
   font-size: .9rem;
