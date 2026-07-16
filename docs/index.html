@@ -133,6 +133,7 @@
   }
   .codebox pre .k { color: var(--copper-hi); }     /* flags / keys */
   .codebox pre .c { color: #77726c; }              /* comments */
+  .codebox pre .ip-prefix { color: var(--copper-hi); }  /* injected env prefix */
   .copy-btn {
     position: absolute; top: 10px; right: 10px;
     font: 600 12px var(--sans); cursor: pointer;
@@ -330,19 +331,7 @@
         <button class="copy-btn" type="button">Copy</button>
 <pre><code>git clone https://github.com/meltface-80/Shortcuts-for-Roon.git
 cd Shortcuts-for-Roon
-
-<span class="c"># Optional: set your server's LAN IP so the webhook URLs are reachable</span>
-<span class="c"># from your phone — edit docker-compose.yml and set:</span>
-<span class="c">#   PUBLIC_BASE_URL=http://<span class="ip-out" data-ph="YOUR_SERVER_LAN_IP">YOUR_SERVER_LAN_IP</span>:3000</span>
-
-<span class="c"># Build the image and start it in the background:</span>
-docker compose up <span class="k">-d</span>
-
-<span class="c"># --- Not using Compose? Build and run it by hand instead: ---</span>
-<span class="c"># docker build -t shortcuts-for-roon .</span>
-<span class="c"># docker run -d --name shortcuts-for-roon --network host \</span>
-<span class="c">#   -e PUBLIC_BASE_URL=http://<span class="ip-out" data-ph="YOUR_SERVER_LAN_IP">YOUR_SERVER_LAN_IP</span>:3000 \</span>
-<span class="c">#   -v roon-data:/data --restart unless-stopped shortcuts-for-roon</span></code></pre>
+<span class="ip-prefix"></span>docker compose up <span class="k">-d</span></code></pre>
       </div>
 
       <p class="note">
@@ -461,12 +450,17 @@ docker compose up <span class="k">-d</span>
   (function () {
     var input = document.getElementById('ipInput');
     var slots = document.querySelectorAll('.ip-out');
-    if (!input || !slots.length) return;
+    var prefixes = document.querySelectorAll('.ip-prefix');
+    if (!input) return;
     function apply(v) {
       v = (v || '').trim();
       slots.forEach(function (s) {
         s.textContent = v || s.dataset.ph;
         s.classList.toggle('set', !!v);
+      });
+      // Inject a real, runnable env prefix onto the compose command when set.
+      prefixes.forEach(function (p) {
+        p.textContent = v ? ('PUBLIC_BASE_URL=http://' + v + ':3000 ') : '';
       });
     }
     var KEY = 'sfr-server-ip';
