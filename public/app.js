@@ -11,8 +11,8 @@
     refreshBtn: document.getElementById("refresh-btn"),
     form: document.getElementById("create-form"),
     name: document.getElementById("wh-name"),
-    genre: document.getElementById("wh-genre"),
-    customField: document.getElementById("custom-genre-field"),
+    count: document.getElementById("wh-count"),
+    genreChecks: document.getElementById("genre-checks"),
     customGenre: document.getElementById("wh-genre-custom"),
     zone: document.getElementById("wh-zone"),
     zoneHint: document.getElementById("zone-hint"),
@@ -20,9 +20,6 @@
     formMsg: document.getElementById("form-msg"),
     toast: document.getElementById("toast")
   };
-
-  // Cache of preset genrePath keyed by label, so POST can send genrePath too.
-  var presetPaths = {};
 
   /* --- fetch helpers ----------------------------------------------------- */
   async function api(path, options) {
@@ -62,27 +59,32 @@
   }
 
   /* --- selectors --------------------------------------------------------- */
-  async function loadPresets() {
+  async function loadGenreChecks() {
     try {
       var data = await api("/api/genres/presets");
       var presets = (data && data.presets) || [];
-      var opts = ['<option value="">Any album</option>'];
-      presetPaths = {};
+      els.genreChecks.innerHTML = "";
       presets.forEach(function (p) {
         if (!p || !p.label) return;
-        // "Any Album" preset already covered by the default empty option.
-        if (p.genrePath == null || (Array.isArray(p.genrePath) && p.genrePath.length === 0)) {
-          presetPaths[""] = null;
-          return;
-        }
-        presetPaths[p.label] = p.genrePath;
-        opts.push('<option value="' + esc(p.label) + '">' + esc(p.label) + "</option>");
+        // Skip the "Any Album" preset — selecting nothing already means "any".
+        if (p.genrePath == null || (Array.isArray(p.genrePath) && p.genrePath.length === 0)) return;
+        var lbl = document.createElement("label");
+        lbl.className = "check";
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.className = "genre-check";
+        cb.value = p.label;
+        var span = document.createElement("span");
+        span.textContent = p.label;
+        lbl.appendChild(cb);
+        lbl.appendChild(span);
+        els.genreChecks.appendChild(lbl);
       });
-      opts.push('<option value="__custom__">Custom genre…</option>');
-      els.genre.innerHTML = opts.join("");
+      if (!els.genreChecks.children.length) {
+        els.genreChecks.innerHTML = '<p class="field__hint">No genre presets — use the custom field below.</p>';
+      }
     } catch (e) {
-      els.genre.innerHTML =
-        '<option value="">Any album</option><option value="__custom__">Custom genre…</option>';
+      els.genreChecks.innerHTML = '<p class="field__hint">Couldn’t load genres — use the custom field below.</p>';
     }
   }
 
@@ -147,6 +149,7 @@
     title.textContent = w.name || "Untitled";
     var tags = document.createElement("div");
     tags.className = "card__tags";
+    if (w.count && w.count > 1) tags.appendChild(makeTag(w.count + " albums", false));
     tags.appendChild(makeTag(genreLabel, false));
     tags.appendChild(makeTag(zoneLabel, false));
     if (w.isPreset) tags.appendChild(makeTag("Preset", true));
@@ -217,12 +220,6 @@
   }
 
   /* --- create ------------------------------------------------------------ */
-  function onGenreChange() {
-    var custom = els.genre.value === "__custom__";
-    els.customField.hidden = !custom;
-    if (custom) els.customGenre.focus();
-  }
-
   async function onSubmit(ev) {
     ev.preventDefault();
     hideFormMsg();
@@ -230,17 +227,21 @@
     var name = els.name.value.trim();
     if (!name) { formMsg("err", "Please enter a name."); els.name.focus(); return; }
 
-    var payload = { name: name };
-    var sel = els.genre.value;
-    if (sel === "__custom__") {
-      var custom = els.customGenre.value.trim();
-      if (!custom) { formMsg("err", "Enter a custom genre or pick another option."); els.customGenre.focus(); return; }
-      payload.genre = custom;
-      payload.genrePath = [[custom]];
-    } else if (sel) {
-      payload.genre = sel;
-      if (presetPaths[sel]) payload.genrePath = presetPaths[sel];
-    } // empty sel => any album, send nothing
+    var count = parseInt(els.count.value, 10);
+    if (!count || count < 1) count = 1;
+    if (count > 50) count = 50;
+
+    // Collect selected preset genres + any custom (comma-separated) genres.
+    var names = [];
+    var checked = els.genreChecks.querySelectorAll(".genre-check:checked");
+    Array.prototype.forEach.call(checked, function (cb) { names.push(cb.value); });
+    var custom = els.customGenre.value.trim();
+    if (custom) {
+      custom.split(/[,;&\n]+/).forEach(function (s) { var v = s.trim(); if (v) names.push(v); });
+    }
+
+    var payload = { name: name, count: count };
+    if (names.length) payload.genres = names;
 
     var zoneId = els.zone.value;
     if (zoneId) {
@@ -258,7 +259,6 @@
         body: JSON.stringify(payload)
       });
       els.form.reset();
-      els.customField.hidden = true;
       formMsg("ok", "Webhook created.");
       showToast("Webhook created");
       await loadWebhooks();
@@ -337,12 +337,11 @@
 
   /* --- boot -------------------------------------------------------------- */
   function init() {
-    els.genre.addEventListener("change", onGenreChange);
     els.form.addEventListener("submit", onSubmit);
     els.refreshBtn.addEventListener("click", function () { loadStatus(); loadWebhooks(); });
 
     loadStatus();
-    loadPresets();
+    loadGenreChecks();
     loadZones();
     loadWebhooks();
 

@@ -62,26 +62,66 @@ test('remove deletes a webhook', () => {
   assert.strictEqual(repo.remove(w.id), false);
 });
 
-test('seedPresets inserts six presets and is idempotent', () => {
+test('seedPresets inserts the default presets and is idempotent', () => {
   const repo = makeRepo();
   assert.strictEqual(repo.seedPresets(), true);
-  assert.strictEqual(repo.count(), 6);
+  assert.strictEqual(repo.count(), 8);
 
   const seededAgain = repo.seedPresets();
   assert.strictEqual(seededAgain, false);
-  assert.strictEqual(repo.count(), 6);
+  assert.strictEqual(repo.count(), 8);
 
   const list = repo.list();
   const slugs = list.map((w) => w.slug).sort();
   assert.ok(slugs.includes('any-album'));
   assert.ok(slugs.includes('random-jazz'));
+  assert.ok(slugs.includes('5-random-albums'));
+  assert.ok(slugs.includes('10-random-albums'));
   assert.ok(list.every((w) => w.isPreset === true));
 
   const any = repo.getBySlug('any-album');
   assert.strictEqual(any.genre, null);
   assert.strictEqual(any.genrePath, null);
+  assert.strictEqual(any.count, 1);
 
   const jazz = repo.getBySlug('random-jazz');
   assert.deepStrictEqual(jazz.genrePath, [['Jazz']]);
   assert.strictEqual(jazz.genre, 'Jazz');
+  assert.strictEqual(jazz.count, 1);
+
+  const five = repo.getBySlug('5-random-albums');
+  assert.strictEqual(five.count, 5);
+  assert.strictEqual(five.genre, null);
+  assert.strictEqual(five.genres, null);
+
+  const ten = repo.getBySlug('10-random-albums');
+  assert.strictEqual(ten.count, 10);
+});
+
+test('create + toJson round-trips count and multi-genre sets', () => {
+  const repo = makeRepo();
+  const wh = repo.create({
+    name: '7 Metal & Electronic',
+    genre: 'Metal & Electronic',
+    genres: [[['Metal'], ['Heavy Metal']], [['Electronic']]],
+    count: 7,
+  });
+  assert.strictEqual(wh.count, 7);
+  assert.strictEqual(wh.genre, 'Metal & Electronic');
+  assert.deepStrictEqual(wh.genres, [[['Metal'], ['Heavy Metal']], [['Electronic']]]);
+  assert.strictEqual(wh.genrePath, null);
+
+  const fetched = repo.getBySlug(wh.slug);
+  assert.strictEqual(fetched.count, 7);
+  assert.deepStrictEqual(fetched.genres, wh.genres);
+
+  // update can change count + genres
+  const updated = repo.update(wh.id, { count: 3, genres: [[['Jazz']]] });
+  assert.strictEqual(updated.count, 3);
+  assert.deepStrictEqual(updated.genres, [[['Jazz']]]);
+
+  // defaults: count is 1 when omitted
+  const plain = repo.create({ name: 'Plain' });
+  assert.strictEqual(plain.count, 1);
+  assert.strictEqual(plain.genres, null);
 });

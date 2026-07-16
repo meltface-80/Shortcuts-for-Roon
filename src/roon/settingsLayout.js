@@ -1,6 +1,17 @@
 'use strict';
 
-const { PRESETS, getPreset } = require('../genres');
+const { PRESETS, parseGenres, clampCount, MAX_ALBUM_COUNT } = require('../genres');
+
+/**
+ * Human-friendly name for a generated webhook.
+ * @param {number} count number of albums
+ * @param {string|null} label genre label, or null for any genre
+ * @returns {string}
+ */
+function webhookName(count, label) {
+  if (count > 1) return label ? `${count} Random ${label} Albums` : `${count} Random Albums`;
+  return label ? `Random ${label}` : 'Random Album';
+}
 
 /**
  * Normalize a Roon `zone` widget value to a plain id string. Roon may store the
@@ -24,11 +35,7 @@ function zoneWidgetToId(val) {
  * @returns {object} a Roon settings layout
  */
 function buildLayout(settings, { webhooksRepo, config }) {
-  const values = settings || {};
-
-  const presetOptions = [{ title: '— none —', value: '' }].concat(
-    PRESETS.map((p) => ({ title: p.label, value: p.key }))
-  );
+  const values = Object.assign({ count: 1 }, settings || {});
 
   // Existing webhooks listing (plain text — Roon labels can't hyperlink).
   let existing;
@@ -40,6 +47,7 @@ function buildLayout(settings, { webhooksRepo, config }) {
   const listText = existing.length
     ? existing.map((w) => `• ${w.name}: ${w.url}`).join('\n')
     : 'No webhooks yet.';
+  const presetNames = PRESETS.filter((p) => p.genrePath).map((p) => p.label).join(', ');
 
   return {
     values,
@@ -49,15 +57,16 @@ function buildLayout(settings, { webhooksRepo, config }) {
         title: 'Create a shortcut webhook',
         items: [
           {
-            type: 'dropdown',
-            title: 'Genre preset',
-            setting: 'preset',
-            values: presetOptions,
+            type: 'string',
+            title: 'Genres (comma-separated — leave blank for any genre)',
+            setting: 'genres',
           },
           {
-            type: 'string',
-            title: 'Custom genre (optional, overrides preset)',
-            setting: 'customGenre',
+            type: 'integer',
+            title: 'Number of albums to play',
+            setting: 'count',
+            min: 1,
+            max: MAX_ALBUM_COUNT,
           },
           {
             type: 'zone',
@@ -65,6 +74,13 @@ function buildLayout(settings, { webhooksRepo, config }) {
             setting: 'defaultZone',
           },
         ],
+      },
+      {
+        type: 'label',
+        title:
+          `Type one or more genres, e.g. "Metal, Electronic" (each album is drawn ` +
+          `from a random one). Presets: ${presetNames}. Leave blank for any genre. ` +
+          `Set the count for a multi-album queue, then Save to create the webhook.`,
       },
       {
         type: 'label',
@@ -131,30 +147,25 @@ function makeSettingsService(roon, ctx) {
 
     if (isDryRun || hasError) return;
 
-    // Real save: create a webhook when a preset or custom genre is chosen.
-    const presetKey = incoming.preset || '';
-    const customGenre = (incoming.customGenre || '').trim();
+    // Real save: create a webhook when the user configured genres or a
+    // multi-album count. ("Any genre, 1 album" already exists as a preset.)
+    const genresStr = (incoming.genres || '').trim();
+    const count = clampCount(incoming.count);
     const zoneId = zoneWidgetToId(incoming.defaultZone);
 
-    if (customGenre) {
+    if (genresStr || count > 1) {
+      const names = genresStr
+        ? genresStr.split(/[,;&\n]+/).map((s) => s.trim()).filter(Boolean)
+        : [];
+      const label = names.length ? names.join(' & ') : null;
       webhooksRepo.create({
-        name: `${customGenre} Random`,
-        genre: customGenre,
-        genrePath: [[customGenre]],
+        name: webhookName(count, label),
+        genre: label,
+        genres: names.length ? parseGenres(names) : null,
+        count,
         zoneId,
         zoneName: null,
       });
-    } else if (presetKey) {
-      const preset = getPreset(presetKey);
-      if (preset) {
-        webhooksRepo.create({
-          name: `${preset.label} Random`,
-          genre: preset.genrePath ? preset.label : null,
-          genrePath: preset.genrePath,
-          zoneId,
-          zoneName: null,
-        });
-      }
     }
 
     // Persist the chosen default zone.
@@ -162,8 +173,8 @@ function makeSettingsService(roon, ctx) {
       onDefaultZone(zoneId);
     }
 
-    // Reset the dropdown/custom fields for the next creation.
-    const nextValues = { ...incoming, preset: '', customGenre: '' };
+    // Reset the create fields for the next webhook.
+    const nextValues = { ...incoming, genres: '', count: 1 };
     persist(nextValues);
     const nextLayout = buildLayout(nextValues, { webhooksRepo, config, getZones });
     if (svc && typeof svc.update_settings === 'function') {

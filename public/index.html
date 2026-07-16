@@ -50,18 +50,24 @@
       </div>
 
       <div class="field">
-        <label for="wh-genre">Genre</label>
-        <select id="wh-genre" name="genre">
-          <option value="">Loading genres…</option>
-        </select>
-        <p class="field__hint">Pick a preset, or choose “Custom genre…” to type your own.</p>
+        <label for="wh-count">Number of albums</label>
+        <input id="wh-count" name="count" type="number" min="1" max="50" value="1" inputmode="numeric" />
+        <p class="field__hint">Play several in a row — the first starts now, the rest queue up.</p>
       </div>
 
-      <div class="field" id="custom-genre-field" hidden>
-        <label for="wh-genre-custom">Custom genre</label>
-        <input id="wh-genre-custom" name="genreCustom" type="text" maxlength="60"
-               placeholder="Exactly as it appears in Roon, e.g. Ambient" autocomplete="off" />
-        <p class="field__hint">Must match a genre that exists in your Roon library.</p>
+      <div class="field">
+        <span class="field__label">Genres</span>
+        <div id="genre-checks" class="checks">
+          <p class="field__hint">Loading genres…</p>
+        </div>
+        <p class="field__hint">Pick one or more (each album is drawn from a random one). None selected = any genre.</p>
+      </div>
+
+      <div class="field">
+        <label for="wh-genre-custom">Custom genres (optional)</label>
+        <input id="wh-genre-custom" name="genreCustom" type="text"
+               placeholder="Comma-separated, e.g. Ambient, Blues" autocomplete="off" />
+        <p class="field__hint">Added to the selection above. Must match genres in your Roon library.</p>
       </div>
 
       <div class="field">
@@ -69,7 +75,7 @@
         <select id="wh-zone" name="zoneId">
           <option value="">Default zone (last active)</option>
         </select>
-        <p class="field__hint" id="zone-hint">Where the album should play.</p>
+        <p class="field__hint" id="zone-hint">Where the albums should play.</p>
       </div>
 
       <div class="form__actions">

@@ -15,6 +15,9 @@ const PRESETS = [
   { key: 'trip-hop', label: 'Trip-Hop', genrePath: [['Trip-Hop'], ['Electronic', 'Trip-Hop']] },
 ];
 
+/** Upper bound on how many albums a single webhook may queue. */
+const MAX_ALBUM_COUNT = 50;
+
 /**
  * Look up a preset by its key.
  * @param {string} key
@@ -24,4 +27,49 @@ function getPreset(key) {
   return PRESETS.find((p) => p.key === key);
 }
 
-module.exports = { PRESETS, getPreset };
+/**
+ * Resolve a single genre NAME to its candidate-path array. If the name matches a
+ * preset label (case-insensitive) the preset's candidate paths are used (so
+ * "Metal" gets the Metal/Heavy-Metal fallback, "Trip-Hop" the Electronic drill,
+ * etc.); otherwise it falls back to a single literal path.
+ * @param {string} name
+ * @returns {string[][]|null} candidate paths, or null for an empty name.
+ */
+function genreNameToCandidates(name) {
+  const n = String(name == null ? '' : name).trim();
+  if (!n) return null;
+  const preset = PRESETS.find((p) => p.label.toLowerCase() === n.toLowerCase() && p.genrePath);
+  if (preset) return preset.genrePath;
+  return [[n]];
+}
+
+/**
+ * Parse a multi-genre selection into "genre sets" — an array where each element
+ * is the candidate-path array for ONE genre. Accepts a comma / semicolon / "&" /
+ * newline separated string ("Metal & Electronic") or an array of names. Returns
+ * null when nothing usable is given (meaning "any genre").
+ * @param {string|string[]|null|undefined} input
+ * @returns {string[][][]|null}
+ */
+function parseGenres(input) {
+  let names = [];
+  if (Array.isArray(input)) names = input;
+  else if (typeof input === 'string') names = input.split(/[,;&\n]+/);
+  names = names.map((s) => String(s == null ? '' : s).trim()).filter(Boolean);
+  if (!names.length) return null;
+  const sets = names.map(genreNameToCandidates).filter(Boolean);
+  return sets.length ? sets : null;
+}
+
+/**
+ * Clamp an album count to an integer in [1, MAX_ALBUM_COUNT].
+ * @param {*} n
+ * @returns {number}
+ */
+function clampCount(n) {
+  const v = Math.floor(Number(n));
+  if (!Number.isFinite(v) || v < 1) return 1;
+  return Math.min(v, MAX_ALBUM_COUNT);
+}
+
+module.exports = { PRESETS, getPreset, genreNameToCandidates, parseGenres, clampCount, MAX_ALBUM_COUNT };

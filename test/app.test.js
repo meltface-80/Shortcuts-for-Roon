@@ -73,7 +73,7 @@ test('GET /api/zones lists zones', async () => {
 test('GET /api/webhooks lists the seeded presets', async () => {
   const res = await fetch(`${ctx.base}/api/webhooks`);
   const body = await res.json();
-  assert.strictEqual(body.webhooks.length, 6);
+  assert.strictEqual(body.webhooks.length, 8);
   assert.ok(body.webhooks.every((w) => w.isPreset === true));
 });
 

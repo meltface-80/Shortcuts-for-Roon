@@ -142,9 +142,9 @@ function createFakeRoonManager(config = {}) {
         const node = byKey.get(opts.item_key);
         if (!node) return Promise.reject(new Error('Unknown item_key'));
 
-        // Play trigger: node marked isPlayNow with a zone provided.
-        if (node.isPlayNow && opts.zone_or_output_id) {
-          plays.push({ node, zoneId: opts.zone_or_output_id, msk });
+        // Play/queue trigger: an action node browsed WITH a zone performs it.
+        if (opts.zone_or_output_id && (node.isPlayNow || node.hint === 'action')) {
+          plays.push({ node, action: node.title, zoneId: opts.zone_or_output_id, msk });
           return Promise.resolve({ action: 'none', list: null });
         }
         sessions.set(msk, node);
