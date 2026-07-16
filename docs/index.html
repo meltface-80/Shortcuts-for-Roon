@@ -326,24 +326,23 @@
         <p class="hint" id="ipHint">Type it in and the commands and URLs below update automatically — copy them ready to run.</p>
       </div>
 
-      <p class="code-label">Recommended — clone and Docker Compose</p>
       <div class="codebox">
         <button class="copy-btn" type="button">Copy</button>
-<pre><code><span class="c">git clone https://github.com/meltface-80/Shortcuts-for-Roon.git</span>
+<pre><code>git clone https://github.com/meltface-80/Shortcuts-for-Roon.git
 cd Shortcuts-for-Roon
-<span class="c"># (optional) edit docker-compose.yml to set:</span>
+
+<span class="c"># Optional: set your server's LAN IP so the webhook URLs are reachable</span>
+<span class="c"># from your phone — edit docker-compose.yml and set:</span>
 <span class="c">#   PUBLIC_BASE_URL=http://<span class="ip-out" data-ph="YOUR_SERVER_LAN_IP">YOUR_SERVER_LAN_IP</span>:3000</span>
-docker compose up <span class="k">-d</span></code></pre>
-      </div>
 
-      <p class="code-label">Or build and run plain Docker</p>
-      <div class="codebox">
-        <button class="copy-btn" type="button">Copy</button>
-<pre><code>docker build <span class="k">-t</span> shortcuts-for-roon .
+<span class="c"># Build the image and start it in the background:</span>
+docker compose up <span class="k">-d</span>
 
-docker run <span class="k">-d</span> <span class="k">--name</span> shortcuts-for-roon <span class="k">--network</span> host \
-  <span class="k">-e</span> PUBLIC_BASE_URL=http://<span class="ip-out" data-ph="YOUR_SERVER_LAN_IP">YOUR_SERVER_LAN_IP</span>:3000 \
-  <span class="k">-v</span> roon-data:/data <span class="k">--restart</span> unless-stopped shortcuts-for-roon</code></pre>
+<span class="c"># --- Not using Compose? Build and run it by hand instead: ---</span>
+<span class="c"># docker build -t shortcuts-for-roon .</span>
+<span class="c"># docker run -d --name shortcuts-for-roon --network host \</span>
+<span class="c">#   -e PUBLIC_BASE_URL=http://<span class="ip-out" data-ph="YOUR_SERVER_LAN_IP">YOUR_SERVER_LAN_IP</span>:3000 \</span>
+<span class="c">#   -v roon-data:/data --restart unless-stopped shortcuts-for-roon</span></code></pre>
       </div>
 
       <p class="note">
