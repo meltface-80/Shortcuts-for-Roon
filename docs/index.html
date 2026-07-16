@@ -401,18 +401,18 @@
       </div>
 
       <div class="out-tabs" role="tablist" aria-label="Install method">
-        <button class="tab sel" type="button" data-tab="compose">docker compose</button>
-        <button class="tab" type="button" data-tab="run">docker run</button>
+        <button class="tab sel" type="button" data-tab="run">docker run</button>
+        <button class="tab" type="button" data-tab="compose">docker compose</button>
       </div>
 
-      <div class="codebox" data-panel="compose">
+      <div class="codebox" data-panel="compose" hidden>
         <button class="copy-btn" type="button">Copy</button>
 <pre><code>git clone https://github.com/meltface-80/MusicD-Shortcuts.git#main
 cd MusicD-Shortcuts
 <span class="ip-prefix"></span>docker compose up <span class="k">-d</span></code></pre>
       </div>
 
-      <div class="codebox" data-panel="run" hidden>
+      <div class="codebox" data-panel="run">
         <button class="copy-btn" type="button">Copy</button>
 <pre><code><span class="c"># Build the image straight from GitHub — no clone needed</span>
 docker build <span class="k">-t</span> musicd-shortcuts https://github.com/meltface-80/MusicD-Shortcuts.git#main
