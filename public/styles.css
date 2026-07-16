@@ -210,9 +210,10 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
 /* Form -------------------------------------------------------------------- */
 .form { display: grid; gap: .95rem; }
 .field { display: grid; gap: .32rem; }
-.field label { font-weight: 600; font-size: .92rem; }
+.field label, .field__label { font-weight: 600; font-size: .92rem; }
+.field__label { display: block; margin-bottom: .32rem; }
 .field__hint { margin: 0; color: var(--text-muted); font-size: .82rem; }
-input[type="text"], select {
+input[type="text"], input[type="number"], select {
   font: inherit;
   width: 100%;
   padding: .6rem .7rem;
@@ -221,6 +222,27 @@ input[type="text"], select {
   background: var(--surface);
   color: var(--text);
   appearance: none;
+}
+input[type="number"] { max-width: 8rem; appearance: auto; }
+
+/* Genre checkbox chips */
+.checks { display: flex; flex-wrap: wrap; gap: .5rem; }
+.check {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .4rem .7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  cursor: pointer;
+  font-size: .9rem;
+  user-select: none;
+}
+.check input { accent-color: var(--accent); width: 1rem; height: 1rem; margin: 0; }
+.check:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.check:has(input:checked) {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
 }
 select {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23a8a49e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");

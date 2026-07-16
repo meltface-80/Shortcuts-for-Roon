@@ -1,30 +1,43 @@
 'use strict';
 
 const express = require('express');
-const { playByGenrePathCandidates } = require('../../roon/albumPlayer');
-const { PRESETS } = require('../../genres');
+const { playRandomAlbums } = require('../../roon/albumPlayer');
+const { parseGenres, clampCount } = require('../../genres');
 
 /** Send a plain-text response (iOS Shortcuts shows the body). */
 function text(res, status, message) {
   res.status(status).type('text/plain').send(message);
 }
 
+/** Resolve a webhook's stored config into the genre sets the player expects. */
+function genreSetsFor(webhook) {
+  if (webhook.genres && webhook.genres.length) return webhook.genres;
+  if (webhook.genrePath) return [webhook.genrePath];
+  return null;
+}
+
 /**
  * Run a play request and translate the outcome into a text response.
  * @param {object} roonManager
- * @param {{candidates:(string[][]|null), zoneId:(string|null)}} params
+ * @param {{genreSets:(Array|null), count:number, zoneId:(string|null), label:(string|null)}} params
  * @param {import('express').Response} res
  */
-async function runPlay(roonManager, { candidates, zoneId }, res) {
+async function runPlay(roonManager, { genreSets, count, zoneId, label }, res) {
   if (!roonManager.isPaired()) {
     text(res, 503, 'Not connected to a Roon Core yet. Make sure the extension is enabled in Roon > Settings > Extensions.');
     return;
   }
   try {
-    const result = await playByGenrePathCandidates({ roonManager, candidates, zoneId });
+    const result = await playRandomAlbums({ roonManager, genreSets, zoneId, count });
     const where = result.zoneName ? ` in ${result.zoneName}` : '';
-    const what = result.album ? result.album : 'a random album';
-    text(res, 200, `Playing ${what}${where}`);
+    const from = label ? ` from ${label}` : '';
+    if (result.requested > 1) {
+      const first = result.albums[0] ? ` — starting with ${result.albums[0]}` : '';
+      text(res, 200, `Playing ${result.count} random albums${from}${where}${first}`);
+    } else {
+      const what = result.albums[0] ? result.albums[0] : 'a random album';
+      text(res, 200, `Playing ${what}${where}`);
+    }
   } catch (err) {
     text(res, 500, err.message || 'Failed to play album');
   }
@@ -46,20 +59,24 @@ function triggerRoutes({ roonManager, webhooksRepo }) {
     }
     await runPlay(
       roonManager,
-      { candidates: webhook.genrePath, zoneId: webhook.zoneId || null },
+      {
+        genreSets: genreSetsFor(webhook),
+        count: webhook.count || 1,
+        zoneId: webhook.zoneId || null,
+        label: webhook.genre || null,
+      },
       res
     );
   });
 
-  // Legacy/compat endpoint.
+  // Ad-hoc / legacy endpoint. Supports ?genre=Jazz (legacy),
+  // ?genres=Metal,Electronic (multi), and ?count=N.
   router.get('/random-album', async (req, res) => {
-    const genre = req.query.genre ? String(req.query.genre).trim() : '';
-    let candidates = null;
-    if (genre) {
-      const preset = PRESETS.find((p) => p.label.toLowerCase() === genre.toLowerCase());
-      candidates = preset ? preset.genrePath : [[genre]];
-    }
-    await runPlay(roonManager, { candidates, zoneId: null }, res);
+    const raw = req.query.genres != null ? req.query.genres : req.query.genre;
+    const genreSets = parseGenres(raw);
+    const count = clampCount(req.query.count || 1);
+    const label = typeof raw === 'string' && raw.trim() ? raw.trim() : null;
+    await runPlay(roonManager, { genreSets, count, zoneId: null, label }, res);
   });
 
   return router;

@@ -71,19 +71,21 @@ async function loadAllItems(roonManager, msk) {
 }
 
 /**
- * Given that we have browsed INTO an album, find and trigger "Play Now".
- * Handles both the nested "Play Album" -> "Play Now" action-list and the case
- * where "Play Now" is a direct child.
+ * Given that we have browsed INTO an album, find and trigger an action such as
+ * "Play Now" or "Queue". Handles both the nested "Play Album" -> action-list and
+ * the case where the action is a direct child.
  * @param {RoonManagerLike} roonManager
  * @param {string} msk
  * @param {string} zoneId
+ * @param {string} [action="Play Now"]  e.g. "Play Now" | "Queue" | "Add Next"
  */
-async function triggerPlay(roonManager, msk, zoneId) {
+async function triggerAction(roonManager, msk, zoneId, action) {
+  const wanted = action || 'Play Now';
   let items = await loadAllItems(roonManager, msk);
 
-  let playNow = items.find((it) => matchTitle(it, 'Play Now'));
+  let target = items.find((it) => matchTitle(it, wanted));
 
-  if (!playNow) {
+  if (!target) {
     // Descend into an action-list: "Play Album" / "Play" / any hint action_list.
     const actionList =
       items.find((it) => matchTitle(it, 'Play Album')) ||
@@ -98,19 +100,18 @@ async function triggerPlay(roonManager, msk, zoneId) {
       multi_session_key: msk,
     });
     items = await loadAllItems(roonManager, msk);
-    playNow =
-      items.find((it) => matchTitle(it, 'Play Now')) ||
-      items.find((it) => matchTitle(it, 'Play')) ||
-      items.find((it) => it && it.hint === 'action');
-    if (!playNow) {
-      throw new Error('Could not find "Play Now" for this album');
+    target =
+      items.find((it) => matchTitle(it, wanted)) ||
+      (wanted === 'Play Now' ? items.find((it) => matchTitle(it, 'Play')) : null);
+    if (!target) {
+      throw new Error(`Could not find "${wanted}" for this album`);
     }
   }
 
-  // The browse of the "Play Now" item WITH the zone starts playback.
+  // The browse of the action item WITH the zone performs it (starts/queues playback).
   await roonManager.browse({
     hierarchy: 'browse',
-    item_key: playNow.item_key,
+    item_key: target.item_key,
     zone_or_output_id: zoneId,
     multi_session_key: msk,
   });
@@ -136,11 +137,13 @@ function resolveZone(roonManager, zoneId) {
 }
 
 /**
- * Play a random album, optionally filtered to a single genre path.
- * @param {{roonManager:RoonManagerLike, genrePath?:string[]|null, zoneId?:string|null}} params
+ * Play a random album, optionally filtered to a single genre path. `action`
+ * selects what to do with it — "Play Now" (default) starts playback and clears
+ * the queue; "Queue" appends it to the end.
+ * @param {{roonManager:RoonManagerLike, genrePath?:string[]|null, zoneId?:string|null, action?:string}} params
  * @returns {Promise<{album:string, zoneId:string, zoneName:string|null}>}
  */
-async function playRandomAlbum({ roonManager, genrePath, zoneId }) {
+async function playRandomAlbum({ roonManager, genrePath, zoneId, action }) {
   if (!roonManager) throw new Error('roonManager is required');
   const msk = crypto.randomUUID();
 
@@ -178,8 +181,8 @@ async function playRandomAlbum({ roonManager, genrePath, zoneId }) {
     }
   }
 
-  // `body` now describes the album's action level. Trigger playback.
-  await triggerPlay(roonManager, msk, zid);
+  // `body` now describes the album's action level. Trigger the action.
+  await triggerAction(roonManager, msk, zid, action);
 
   return { album: albumTitle, zoneId: zid, zoneName };
 }
@@ -188,16 +191,16 @@ async function playRandomAlbum({ roonManager, genrePath, zoneId }) {
  * Try each candidate genre path in order until one succeeds. `candidates` is an
  * array of path arrays (e.g. [["Trip-Hop"], ["Electronic","Trip-Hop"]]), or
  * null/[] for "any album".
- * @param {{roonManager:RoonManagerLike, candidates?:(string[][]|null), zoneId?:string|null}} params
+ * @param {{roonManager:RoonManagerLike, candidates?:(string[][]|null), zoneId?:string|null, action?:string}} params
  */
-async function playByGenrePathCandidates({ roonManager, candidates, zoneId }) {
+async function playByGenrePathCandidates({ roonManager, candidates, zoneId, action }) {
   if (!candidates || candidates.length === 0) {
-    return playRandomAlbum({ roonManager, genrePath: null, zoneId });
+    return playRandomAlbum({ roonManager, genrePath: null, zoneId, action });
   }
   let lastErr = null;
   for (const candidate of candidates) {
     try {
-      return await playRandomAlbum({ roonManager, genrePath: candidate, zoneId });
+      return await playRandomAlbum({ roonManager, genrePath: candidate, zoneId, action });
     } catch (err) {
       lastErr = err;
     }
@@ -205,9 +208,75 @@ async function playByGenrePathCandidates({ roonManager, candidates, zoneId }) {
   throw lastErr || new Error('No matching genre path found in your library');
 }
 
+/** Fisher–Yates shuffle (returns a new array). */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = randInt(i + 1);
+    const t = a[i];
+    a[i] = a[j];
+    a[j] = t;
+  }
+  return a;
+}
+
+/**
+ * Play/queue ONE album drawn from a random genre in `genreSets`. Each element of
+ * `genreSets` is a candidate-path array for one genre. Selected genres are tried
+ * in random order until one yields an album. `null`/`[]` means any genre.
+ * @param {{roonManager:RoonManagerLike, genreSets?:(string[][][]|null), zoneId:string, action:string}} params
+ */
+async function playOneFromSets({ roonManager, genreSets, zoneId, action }) {
+  if (!genreSets || genreSets.length === 0) {
+    return playRandomAlbum({ roonManager, genrePath: null, zoneId, action });
+  }
+  const order = shuffle(genreSets);
+  let lastErr = null;
+  for (const candidates of order) {
+    try {
+      return await playByGenrePathCandidates({ roonManager, candidates, zoneId, action });
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('No matching genre found in your library');
+}
+
+/**
+ * Play `count` random albums into a zone. The first uses "Play Now" (starting
+ * playback and replacing the queue); the rest are appended with "Queue". When
+ * `genreSets` has several genres, each album is drawn from a randomly chosen one.
+ * @param {{roonManager:RoonManagerLike, genreSets?:(string[][][]|null), zoneId?:string|null, count?:number}} params
+ * @returns {Promise<{albums:string[], count:number, requested:number, zoneId:string, zoneName:string|null}>}
+ */
+async function playRandomAlbums({ roonManager, genreSets, zoneId, count }) {
+  if (!roonManager) throw new Error('roonManager is required');
+  const requested = Math.max(1, Math.floor(Number(count)) || 1);
+  const { zoneId: zid, zoneName } = resolveZone(roonManager, zoneId);
+  if (!zid) {
+    throw new Error('No Roon zone available. Choose a zone or start playback in Roon first.');
+  }
+
+  const albums = [];
+  for (let i = 0; i < requested; i += 1) {
+    const action = i === 0 ? 'Play Now' : 'Queue';
+    try {
+      const r = await playOneFromSets({ roonManager, genreSets, zoneId: zid, action });
+      albums.push(r.album);
+    } catch (err) {
+      // The first album must start playback; later slots are best-effort.
+      if (i === 0) throw err;
+    }
+  }
+  return { albums, count: albums.length, requested, zoneId: zid, zoneName };
+}
+
 module.exports = {
   playRandomAlbum,
   playByGenrePathCandidates,
+  playRandomAlbums,
+  playOneFromSets,
   resolveZone,
   buildNavPath,
+  shuffle,
 };

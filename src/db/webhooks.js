@@ -18,6 +18,16 @@ function slugify(name) {
   return base || 'webhook';
 }
 
+/** Parse a JSON column value, returning null on empty/invalid input. */
+function parseJson(value) {
+  if (value == null) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Repository for webhook rows. Converts every row to the camelCase JSON shape
  * documented in the contract, including a computed `url`.
@@ -39,20 +49,16 @@ class WebhooksRepo {
    */
   toJson(row) {
     if (!row) return null;
-    let genrePath = null;
-    if (row.genre_path != null) {
-      try {
-        genrePath = JSON.parse(row.genre_path);
-      } catch {
-        genrePath = null;
-      }
-    }
+    const genrePath = parseJson(row.genre_path);
+    const genres = parseJson(row.genres);
     return {
       id: row.id,
       name: row.name,
       slug: row.slug,
       genre: row.genre == null ? null : row.genre,
       genrePath,
+      genres,
+      count: row.album_count == null ? 1 : Number(row.album_count),
       zoneId: row.zone_id == null ? null : row.zone_id,
       zoneName: row.zone_name == null ? null : row.zone_name,
       isPreset: !!row.is_preset,
@@ -111,6 +117,8 @@ class WebhooksRepo {
       name,
       genre = null,
       genrePath = null,
+      genres = null,
+      count = 1,
       zoneId = null,
       zoneName = null,
       isPreset = false,
@@ -122,14 +130,16 @@ class WebhooksRepo {
     const rowId = id || crypto.randomUUID().slice(0, 8);
     const rowSlug = slug ? (this._slugExists(slug) ? this._uniqueSlug(slug) : slug) : this._uniqueSlug(name);
     const genrePathJson = genrePath == null ? null : JSON.stringify(genrePath);
+    const genresJson = genres == null ? null : JSON.stringify(genres);
+    const albumCount = Math.max(1, Math.floor(Number(count)) || 1);
     const createdAt = Date.now();
 
     this.db
       .prepare(
-        `INSERT INTO webhooks (id, name, slug, genre, genre_path, zone_id, zone_name, is_preset, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO webhooks (id, name, slug, genre, genre_path, genres, album_count, zone_id, zone_name, is_preset, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(rowId, String(name), rowSlug, genre, genrePathJson, zoneId, zoneName, isPreset ? 1 : 0, createdAt);
+      .run(rowId, String(name), rowSlug, genre, genrePathJson, genresJson, albumCount, zoneId, zoneName, isPreset ? 1 : 0, createdAt);
 
     return this.get(rowId);
   }
@@ -159,6 +169,8 @@ class WebhooksRepo {
     }
     if ('genre' in partial) set('genre', partial.genre == null ? null : String(partial.genre));
     if ('genrePath' in partial) set('genre_path', partial.genrePath == null ? null : JSON.stringify(partial.genrePath));
+    if ('genres' in partial) set('genres', partial.genres == null ? null : JSON.stringify(partial.genres));
+    if ('count' in partial) set('album_count', Math.max(1, Math.floor(Number(partial.count)) || 1));
     if ('zoneId' in partial) set('zone_id', partial.zoneId == null ? null : String(partial.zoneId));
     if ('zoneName' in partial) set('zone_name', partial.zoneName == null ? null : String(partial.zoneName));
     if ('isPreset' in partial) set('is_preset', partial.isPreset ? 1 : 0);
@@ -204,6 +216,19 @@ class WebhooksRepo {
         zoneName: null,
         isPreset: true,
         slug,
+      });
+    }
+    // Multi-album presets: play several random albums (any genre) back to back.
+    for (const n of [5, 10]) {
+      this.create({
+        name: `${n} Random Albums`,
+        genre: null,
+        genres: null,
+        count: n,
+        zoneId: null,
+        zoneName: null,
+        isPreset: true,
+        slug: `${n}-random-albums`,
       });
     }
     return true;

@@ -5,6 +5,7 @@ const assert = require('node:assert');
 const {
   playRandomAlbum,
   playByGenrePathCandidates,
+  playRandomAlbums,
   resolveZone,
 } = require('../src/roon/albumPlayer');
 const { createFakeRoonManager, buildDefaultTree } = require('./helpers/fakeRoon');
@@ -95,4 +96,65 @@ test('every browse/load carries a multi_session_key and it is unique per call', 
   }
   // A single play uses ONE session key across all its calls.
   assert.strictEqual(keys.size, 1);
+});
+
+/* --- multi-album (count) + multi-genre ---------------------------------- */
+
+test('playRandomAlbums plays N albums: first Play Now, rest Queue', async () => {
+  const roonManager = createFakeRoonManager();
+  const result = await playRandomAlbums({ roonManager, genreSets: null, zoneId: 'zone-1', count: 3 });
+  assert.strictEqual(result.requested, 3);
+  assert.strictEqual(result.count, 3);
+  assert.strictEqual(result.albums.length, 3);
+  result.albums.forEach((a) => assert.match(a, /^Library Album \d+$/));
+  // Actions recorded on the fake: first is Play Now, the rest are Queue.
+  const actions = roonManager._plays.map((p) => p.action);
+  assert.strictEqual(actions.length, 3);
+  assert.strictEqual(actions[0], 'Play Now');
+  assert.deepStrictEqual(actions.slice(1), ['Queue', 'Queue']);
+  // All performed on the requested zone.
+  assert.ok(roonManager._plays.every((p) => p.zoneId === 'zone-1'));
+});
+
+test('playRandomAlbums with a single genre set plays from that genre', async () => {
+  const roonManager = createFakeRoonManager();
+  const result = await playRandomAlbums({
+    roonManager,
+    genreSets: [[['Jazz']]],
+    zoneId: 'zone-1',
+    count: 2,
+  });
+  assert.strictEqual(result.albums.length, 2);
+  result.albums.forEach((a) => assert.match(a, /^Jazz Album \d+$/));
+});
+
+test('playRandomAlbums draws from a randomly chosen genre when several are given', async () => {
+  const roonManager = createFakeRoonManager();
+  const result = await playRandomAlbums({
+    roonManager,
+    genreSets: [[['Jazz']], [['Electronic']]],
+    zoneId: 'zone-1',
+    count: 6,
+  });
+  assert.strictEqual(result.albums.length, 6);
+  result.albums.forEach((a) => assert.match(a, /^(Jazz|Electronic) Album \d+$/));
+});
+
+test('playRandomAlbums resolves trip-hop via candidate drill-down', async () => {
+  const roonManager = createFakeRoonManager();
+  const result = await playRandomAlbums({
+    roonManager,
+    genreSets: [[['Trip-Hop'], ['Electronic', 'Trip-Hop']]],
+    zoneId: 'zone-1',
+    count: 2,
+  });
+  assert.strictEqual(result.albums.length, 2);
+  result.albums.forEach((a) => assert.match(a, /^Trip-Hop Album \d+$/));
+});
+
+test('playRandomAlbums count defaults to 1 and is best-effort on later slots', async () => {
+  const roonManager = createFakeRoonManager();
+  const one = await playRandomAlbums({ roonManager, genreSets: null, zoneId: 'zone-1' });
+  assert.strictEqual(one.requested, 1);
+  assert.strictEqual(one.albums.length, 1);
 });

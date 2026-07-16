@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { PRESETS } = require('../../genres');
+const { PRESETS, parseGenres, clampCount } = require('../../genres');
 
 /**
  * REST API consumed by the PWA. Returns JSON.
@@ -39,13 +39,24 @@ function apiRoutes({ roonManager, webhooksRepo }) {
       return;
     }
     try {
-      const webhook = webhooksRepo.create({
+      const data = {
         name: String(body.name),
-        genre: body.genre != null ? body.genre : null,
-        genrePath: body.genrePath != null ? body.genrePath : null,
+        count: clampCount(body.count != null ? body.count : 1),
         zoneId: body.zoneId != null ? body.zoneId : null,
         zoneName: body.zoneName != null ? body.zoneName : null,
-      });
+      };
+      // Multi-genre selection (array of genre names) takes precedence.
+      const names = Array.isArray(body.genres)
+        ? body.genres.map((g) => String(g).trim()).filter(Boolean)
+        : null;
+      if (names && names.length) {
+        data.genres = parseGenres(names);
+        data.genre = names.join(' & ');
+      } else {
+        data.genre = body.genre != null ? body.genre : null;
+        data.genrePath = body.genrePath != null ? body.genrePath : null;
+      }
+      const webhook = webhooksRepo.create(data);
       res.status(201).json({ webhook });
     } catch (err) {
       res.status(400).json({ error: err.message });
