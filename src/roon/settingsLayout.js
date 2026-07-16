@@ -38,7 +38,11 @@ function updateStatusText(config, lastUpdate) {
       `pairing and webhooks are kept, and it stays the same extension in Roon.`
     );
   }
-  return `${line}\nUp to date (latest in ${pinned}: v${lastUpdate.latest}).`;
+  let msg = `${line}\nUp to date (latest in ${pinned}: v${lastUpdate.latest}).`;
+  if (lastUpdate.newerLineAvailable && lastUpdate.remote) {
+    msg += ` A newer line (v${lastUpdate.remote}) exists — still pinned to ${pinned}.`;
+  }
+  return msg;
 }
 
 /** "1.0.0" -> "1.0.x" */
@@ -118,6 +122,14 @@ function buildLayout(settings, { webhooksRepo, config, lastUpdate }) {
           `genre. Set the count for a multi-album queue, then Save to create the webhook.`,
       },
       {
+        type: 'label',
+        title: `Dashboard (open in a browser): ${config.PUBLIC_BASE_URL}/`,
+      },
+      {
+        type: 'label',
+        title: `Your webhooks:\n${listText}`,
+      },
+      {
         type: 'group',
         title: 'Software update',
         items: [
@@ -135,14 +147,6 @@ function buildLayout(settings, { webhooksRepo, config, lastUpdate }) {
             title: updateStatusText(config, lastUpdate),
           },
         ],
-      },
-      {
-        type: 'label',
-        title: `Dashboard (open in a browser): ${config.PUBLIC_BASE_URL}/`,
-      },
-      {
-        type: 'label',
-        title: `Your webhooks:\n${listText}`,
       },
     ],
     has_error: false,

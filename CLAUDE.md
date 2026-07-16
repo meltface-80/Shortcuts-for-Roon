@@ -171,10 +171,13 @@ recreating them. Genre strings are **data, not hardcoded logic**.
 
 ## Updates & versioning
 
-- **Manual update check in Roon settings.** The "Software update" group has a
-  "Check now" dropdown; on save it fetches the repo's GitHub tags and reports the
-  newest release **within the installed version's major.minor line** (pin, e.g.
-  `1.0.x`). It never auto-updates — the operator redeploys the container. Logic in
+- **Manual update check in Roon settings** (bottom "Software update" group). A
+  "Check now" dropdown; on save it reads the `version` in **`package.json` on the
+  repo's default branch** (`raw.githubusercontent.com`, `GITHUB_BRANCH`, default
+  `main`) — NOT git tags, so an update is detected as soon as a new version is
+  merged (no tagging needed). It offers it only **within the installed version's
+  major.minor line** (pin, e.g. `1.0.x`); a newer minor/major line is flagged but
+  not offered. Never auto-updates — the operator redeploys. Logic in
   `src/updateChecker.js` (injectable `fetch`, fully unit-tested); no background or
   startup polling. Applying an update = `docker compose pull && up -d` (or rebuild).
 - **`ROON_DISPLAY_VERSION` is derived from `package.json` `version`** — bump the
