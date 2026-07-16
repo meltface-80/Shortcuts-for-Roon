@@ -163,6 +163,22 @@ list only shows genres that actually have library content, so a missing genre
 fails gracefully with a clear message. Genre strings are **data, not hardcoded
 logic** — users add any genre/path their library has via the dropdown or PWA.
 
+## Updates & versioning
+
+- **Manual update check in Roon settings.** The "Software update" group has a
+  "Check now" dropdown; on save it fetches the repo's GitHub tags and reports the
+  newest release **within the installed version's major.minor line** (pin, e.g.
+  `1.0.x`). It never auto-updates — the operator redeploys the container. Logic in
+  `src/updateChecker.js` (injectable `fetch`, fully unit-tested); no background or
+  startup polling. Applying an update = `docker compose pull && up -d` (or rebuild).
+- **`ROON_DISPLAY_VERSION` is derived from `package.json` `version`** — bump the
+  package version to release (1.0.0 → 1.0.1 → …), pinned to `1.0.x` for now.
+- **`extension_id` (`com.musicd.shortcuts`) is the stable identity and must NEVER
+  change across versions.** Roon keys pairing/authorisation on `extension_id`, not
+  version — changing it makes Roon show a **new/duplicate** extension needing
+  re-authorisation. Version bumps are safe; the pairing token in `config.json`
+  (on the `/data` volume) persists, so an update stays the same extension in Roon.
+
 ## Commands
 
 ```bash

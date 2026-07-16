@@ -2,6 +2,7 @@
 
 const os = require('node:os');
 const path = require('node:path');
+const pkg = require('../package.json');
 
 /**
  * Detect the first non-internal IPv4 LAN address, so webhook URLs shown to the
@@ -37,12 +38,20 @@ function loadConfig(env = process.env) {
     DB_PATH,
     PUBLIC_BASE_URL,
     // Roon extension metadata (overridable via env).
+    // ROON_EXTENSION_ID is the STABLE identity Roon keys authorisation on.
+    // NEVER change it across versions — a new id makes Roon show the extension
+    // as a new/duplicate entry needing re-authorisation. Version bumps are safe.
     ROON_EXTENSION_ID: env.ROON_EXTENSION_ID || 'com.musicd.shortcuts',
     ROON_DISPLAY_NAME: env.ROON_DISPLAY_NAME || 'MusicD Shortcuts',
-    ROON_DISPLAY_VERSION: env.ROON_DISPLAY_VERSION || '1.0.0',
+    ROON_DISPLAY_VERSION: env.ROON_DISPLAY_VERSION || pkg.version,
     ROON_PUBLISHER: env.ROON_PUBLISHER || 'MusicD Shortcuts',
     ROON_EMAIL: env.ROON_EMAIL || 'musicd-shortcuts@example.com',
     ROON_WEBSITE: env.ROON_WEBSITE || 'https://github.com/meltface-80/MusicD-Shortcuts',
+    // Update check (manual, from Roon settings). Pinned to the installed
+    // version's major.minor line (e.g. 1.0.x) — see src/updateChecker.js.
+    VERSION: pkg.version,
+    GITHUB_OWNER: env.GITHUB_OWNER || 'meltface-80',
+    GITHUB_REPO: env.GITHUB_REPO || 'MusicD-Shortcuts',
   };
 }
 
