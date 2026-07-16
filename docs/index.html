@@ -151,6 +151,21 @@
     color: var(--copper-hi);
   }
 
+  /* ---------- ip configurator ---------- */
+  .ipcfg {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 22px;
+  }
+  .ipcfg label { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; letter-spacing: .02em; }
+  .ipcfg input {
+    width: 100%; max-width: 320px; padding: 9px 12px; font-size: 14px;
+    font-family: var(--mono); color: var(--text); background: var(--bg-deep);
+    border: 1px solid var(--line); border-radius: 8px; outline: none;
+  }
+  .ipcfg input:focus { border-color: var(--copper); }
+  .ipcfg .hint { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .ip-out.set { color: var(--copper-hi); }
+
   /* ---------- numbered steps ---------- */
   .steps { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
   .steps ol { padding-left: 20px; font-size: 14px; display: grid; gap: 10px; color: var(--muted); }
@@ -290,8 +305,8 @@
         </table>
       </div>
       <p class="note">
-        Full URL shape: <code>http://&lt;YOUR_SERVER_LAN_IP&gt;:3000/w/&lt;slug&gt;</code>.
-        The dashboard lives at <code>http://&lt;YOUR_SERVER_LAN_IP&gt;:3000/</code>.
+        Full URL shape: <code>http://<span class="ip-out" data-ph="&lt;YOUR_SERVER_LAN_IP&gt;">&lt;YOUR_SERVER_LAN_IP&gt;</span>:3000/w/&lt;slug&gt;</code>.
+        The dashboard lives at <code>http://<span class="ip-out" data-ph="&lt;YOUR_SERVER_LAN_IP&gt;">&lt;YOUR_SERVER_LAN_IP&gt;</span>:3000/</code>.
       </p>
     </div>
   </section>
@@ -304,13 +319,20 @@
         extension can discover your Roon Core over UDP broadcast.
       </p>
 
+      <div class="ipcfg">
+        <label for="ipInput">Your Roon server's LAN IP address</label>
+        <input id="ipInput" type="text" inputmode="decimal" autocomplete="off"
+               spellcheck="false" placeholder="192.168.1.50" aria-describedby="ipHint" />
+        <p class="hint" id="ipHint">Type it in and the commands and URLs below update automatically — copy them ready to run.</p>
+      </div>
+
       <p class="code-label">Recommended — clone and Docker Compose</p>
       <div class="codebox">
         <button class="copy-btn" type="button">Copy</button>
 <pre><code><span class="c">git clone https://github.com/meltface-80/Shortcuts-for-Roon.git</span>
 cd Shortcuts-for-Roon
 <span class="c"># (optional) edit docker-compose.yml to set:</span>
-<span class="c">#   PUBLIC_BASE_URL=http://YOUR_SERVER_LAN_IP:3000</span>
+<span class="c">#   PUBLIC_BASE_URL=http://<span class="ip-out" data-ph="YOUR_SERVER_LAN_IP">YOUR_SERVER_LAN_IP</span>:3000</span>
 docker compose up <span class="k">-d</span></code></pre>
       </div>
 
@@ -320,7 +342,7 @@ docker compose up <span class="k">-d</span></code></pre>
 <pre><code>docker build <span class="k">-t</span> shortcuts-for-roon .
 
 docker run <span class="k">-d</span> <span class="k">--name</span> shortcuts-for-roon <span class="k">--network</span> host \
-  <span class="k">-e</span> PUBLIC_BASE_URL=http://YOUR_SERVER_LAN_IP:3000 \
+  <span class="k">-e</span> PUBLIC_BASE_URL=http://<span class="ip-out" data-ph="YOUR_SERVER_LAN_IP">YOUR_SERVER_LAN_IP</span>:3000 \
   <span class="k">-v</span> roon-data:/data <span class="k">--restart</span> unless-stopped shortcuts-for-roon</code></pre>
       </div>
 
@@ -436,6 +458,29 @@ docker run <span class="k">-d</span> <span class="k">--name</span> shortcuts-for
 </footer>
 
 <script>
+  // Live server-IP substitution: fill the field and every command/URL updates.
+  (function () {
+    var input = document.getElementById('ipInput');
+    var slots = document.querySelectorAll('.ip-out');
+    if (!input || !slots.length) return;
+    function apply(v) {
+      v = (v || '').trim();
+      slots.forEach(function (s) {
+        s.textContent = v || s.dataset.ph;
+        s.classList.toggle('set', !!v);
+      });
+    }
+    var KEY = 'sfr-server-ip';
+    try {
+      var saved = localStorage.getItem(KEY) || '';
+      if (saved) { input.value = saved; apply(saved); }
+    } catch (e) {}
+    input.addEventListener('input', function () {
+      apply(input.value);
+      try { localStorage.setItem(KEY, input.value.trim()); } catch (e) {}
+    });
+  })();
+
   document.querySelectorAll('.copy-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var pre = btn.parentElement.querySelector('pre');
